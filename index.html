@@ -1,1 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNMSM - Simulacro DECO & Banco de Preguntas</title>
+    <!-- Tailwind CSS para un diseño moderno y rápido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
 
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 p-4 shadow-md">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-red-500">UNMSM <span class="text-white">Simulador DECO</span></h1>
+            <span id="status-db" class="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2.5 py-1 rounded-full">Conectando a Supabase...</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-2xl mx-auto p-4 w-full flex-grow flex flex-col justify-center">
+        
+        <!-- Vista de Carga o Bienvenida -->
+        <div id="app-container" class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
+            <div class="text-center py-8">
+                <h2 class="text-2xl font-semibold mb-2">Preparación Examen de Admisión</h2>
+                <p class="text-slate-400 mb-6">Banco de preguntas inteligente conectado a Supabase.</p>
+                <button onclick="cargarPreguntas()" class="bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-2.5 rounded-lg transition-all shadow-lg shadow-red-600/20">
+                    Cargar Preguntas
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 border-t border-slate-700 text-center py-3 text-xs text-slate-500">
+        Plataforma optimizada para despliegue en Netlify y Supabase
+    </footer>
+
+    <!-- Lógica de Conexión y Renderizado -->
+    <script>
+        // CONFIGURACIÓN DE SUPABASE (Reemplaza con tus credenciales reales)
+        const SUPABASE_URL = 'https://mjyxpdtpnbrjxtbwtqgz.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_6jCQHTCU3n8xzUmvtpAvQQ_ntXFCjK-';
+        
+        let supabaseClient = null;
+
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            document.getElementById('status-db').innerText = 'Supabase Conectado';
+            document.getElementById('status-db').className = 'text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full';
+        } catch (e) {
+            document.getElementById('status-db').innerText = 'Error de Conexión';
+            document.getElementById('status-db').className = 'text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-full';
+        }
+
+        async function cargarPreguntas() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = `<div class="text-center py-8"><p class="text-slate-400 animate-pulse">Obteniendo preguntas de la base de datos...</p></div>`;
+
+            if (!supabaseClient) {
+                container.innerHTML = `<p class="text-rose-400 text-center">Falta configurar las credenciales de Supabase en el código.</p>`;
+                return;
+            }
+
+            // Consulta a tu tabla en Supabase (ej: 'banco_preguntas')
+            const { data, error } = await supabaseClient
+                .from('banco_preguntas')
+                .select('*')
+                .limit(5);
+
+            if (error) {
+                container.innerHTML = `<p class="text-rose-400 text-center">Error al consultar: ${error.message}</p>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<p class="text-amber-400 text-center">No se encontraron preguntas en la tabla 'banco_preguntas'. ¡Ejecuta tus scripts de Python para llenarla!</p>`;
+                return;
+            }
+
+            // Renderizar la primera pregunta obtenida
+            const p = data[0];
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center text-xs text-slate-400">
+                        <span class="bg-slate-700 px-2 py-1 rounded">${p.area || 'Área D/E'}</span>
+                        <span>Modelo DECO</span>
+                    </div>
+                    <h3 class="text-lg font-medium text-white">${p.enunciado || p.pregunta || 'Pregunta sin texto'}</h3>
+                    <div class="space-y-2 mt-4">
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">A) ${p.alternativa_a || 'Opción A'}</div>
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">B) ${p.alternativa_b || 'Opción B'}</div>
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">C) ${p.alternativa_c || 'Opción C'}</div>
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">D) ${p.alternativa_d || 'Opción D'}</div>
+                    </div>
+                    <div class="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700 text-sm text-slate-300">
+                        <strong>Fundamentación IA:</strong> ${p.explicacion || p.solucionario || 'Generada mediante Python y Google GenAI.'}
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
