@@ -18,7 +18,7 @@
             </div>
             <div class="flex items-center gap-3">
                 <span id="cronometro-global" class="text-xs bg-slate-800 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full font-mono font-bold hidden">⏱️ 03:00:00</span>
-                <span id="status-db" class="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3 py-1 rounded-full font-medium">Conectando...</span>
+                <span id="status-db" class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full font-medium">Base Conectada</span>
             </div>
         </div>
     </header>
@@ -55,7 +55,7 @@
                 </div>
                 <h2 class="text-2xl md:text-3xl font-bold text-white">Centro de Entrenamiento DECO</h2>
                 <p class="text-slate-400 max-w-lg mx-auto text-sm">
-                    Simulador con control de tiempo oficial (3 horas), penalidades UNMSM (-1.125 por error) y corrección guiada.
+                    Simulador con control de tiempo oficial, penalidades UNMSM (-1.125 por error) y navegación libre entre preguntas.
                 </p>
                 <div class="pt-4">
                     <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30">
@@ -75,59 +75,35 @@
         const SUPABASE_URL = 'https://mjyxpdtpnbrjxtbwtqgz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_6jCQHTCU3n8xzUmvtpAvQQ_ntXFCjK-';
         
-        let supabaseClient = null;
+        let supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let listaPreguntas = [];
         let indiceActual = 0;
-        let estadisticas = { aciertos: 0, respondidas: 0, tiemposPorPregunta: [] };
+        let estadisticas = { aciertos: 0, respondidas: 0, respuestasUsuario: {} };
         
-        // Control de tiempo
-        let tiempoRestanteGlobal = 3 * 3600; // 3 horas en segundos
+        let tiempoRestanteGlobal = 3 * 3600;
         let timerGlobalInterval = null;
-        let tiempoInicioPregunta = 0;
-        let tiempoPreguntaInterval = null;
-        let segundosActualesPregunta = 0;
-
-        try {
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            document.getElementById('status-db').innerText = 'Base Conectada';
-            document.getElementById('status-db').className = 'text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full font-medium';
-        } catch (e) {
-            document.getElementById('status-db').innerText = 'Error de Conexión';
-            document.getElementById('status-db').className = 'text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-3 py-1 rounded-full font-medium';
-        }
 
         async function iniciarSimulacro() {
             const container = document.getElementById('app-container');
             container.innerHTML = `<div class="text-center py-12"><p class="text-slate-400 animate-pulse font-medium">Cargando banco de preguntas DECO...</p></div>`;
 
-            if (!supabaseClient) {
-                container.innerHTML = `<p class="text-rose-400 text-center">Falta configurar las credenciales de Supabase.</p>`;
-                return;
-            }
-
             const { data, error } = await supabaseClient
                 .from('banco_preguntas')
                 .select('*');
 
-            if (error) {
-                container.innerHTML = `<p class="text-rose-400 text-center">Error al consultar Supabase: ${error.message}</p>`;
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                container.innerHTML = `<p class="text-amber-400 text-center">No hay preguntas registradas en 'banco_preguntas'.</p>`;
+            if (error || !data || data.length === 0) {
+                container.innerHTML = `<p class="text-rose-400 text-center">Error al cargar preguntas de Supabase.</p>`;
                 return;
             }
 
             listaPreguntas = data;
             indiceActual = 0;
-            estadisticas = { aciertos: 0, respondidas: 0, tiemposPorPregunta: [] };
+            estadisticas = { aciertos: 0, respondidas: 0, respuestasUsuario: {} };
             
             document.getElementById('dashboard-container').classList.remove('hidden');
             document.getElementById('cronometro-global').classList.remove('hidden');
             
             iniciarCronometroGlobal();
-            actualizarDashboard();
             renderizarPreguntaActual();
         }
 
@@ -151,36 +127,29 @@
 
         function actualizarDashboard() {
             const total = listaPreguntas.length;
-            const respondidas = estadisticas.respondidas;
-            const aciertos = estadisticas.aciertos;
-            const errores = respondidas - aciertos;
+            const respondidasSet = Object.keys(estadisticas.respuestasUsuario).length;
+            let aciertosCount = 0;
             
-            // Fórmula oficial UNMSM: +20 por acierto, -1.125 por error
-            let puntajeReal = (aciertos * 20) - (errores * 1.125);
+            for (let idx in estadisticas.respuestasUsuario) {
+                if (estadisticas.respuestasUsuario[idx].esCorrecta) aciertosCount++;
+            }
+            
+            let puntajeReal = (aciertosCount * 20) - ((respondidasSet - aciertosCount) * 1.125);
             if (puntajeReal < 0) puntajeReal = 0;
 
-            const tasa = respondidas > 0 ? Math.round((aciertos / respondidas) * 100) : 0;
+            const tasa = respondidasSet > 0 ? Math.round((aciertosCount / respondidasSet) * 100) : 0;
 
             document.getElementById('stat-puntaje').innerText = `${Math.round(puntajeReal)} / 2000`;
             document.getElementById('stat-exito').innerText = `${tasa}%`;
-            document.getElementById('stat-vistas').innerText = `${respondidas} / ${total}`;
+            document.getElementById('stat-vistas').innerText = `${respondidasSet} / ${total}`;
         }
 
         function renderizarPreguntaActual() {
-            if (indiceActual >= listaPreguntas.length) {
-                mostrarInformeFinal();
-                return;
-            }
+            if (indiceActual < 0) indiceActual = 0;
+            if (indiceActual >= listaPreguntas.length) indiceActual = listaPreguntas.length - 1;
 
             const p = listaPreguntas[indiceActual];
             const container = document.getElementById('app-container');
-
-            // Iniciar conteo de tiempo para esta pregunta específica
-            segundosActualesPregunta = 0;
-            if (tiempoPreguntaInterval) clearInterval(tiempoPreguntaInterval);
-            tiempoPreguntaInterval = setInterval(() => {
-                segundosActualesPregunta++;
-            }, 1000);
 
             let opts = {};
             try {
@@ -189,126 +158,144 @@
                 opts = {};
             }
 
-            const altA = opts.A || p.alternativa_a || 'Opción A';
-            const altB = opts.B || p.alternativa_b || 'Opción B';
-            const altC = opts.C || p.alternativa_c || 'Opción C';
-            const altD = opts.D || p.alternativa_d || 'Opción D';
-            const altE = opts.E || p.alternativa_e || 'Opción E';
+            const respuestaGuardada = estadisticas.respuestasUsuario[indiceActual];
+
+            // Generar botones de salto rápido (1 al N)
+            let botonesNavegacion = '';
+            for (let i = 0; i < listaPreguntas.length; i++) {
+                let colorBtn = "bg-slate-800 text-slate-300 border-slate-700";
+                if (i === indiceActual) colorBtn = "bg-blue-600 text-white border-blue-500 ring-2 ring-blue-400";
+                else if (estadisticas.respuestasUsuario[i]) {
+                    colorBtn = estadisticas.respuestasUsuario[i].esCorrecta ? "bg-emerald-900/60 text-emerald-300 border-emerald-600" : "bg-rose-900/60 text-rose-300 border-rose-600";
+                }
+                botonesNavegacion += `<button onclick="irAPregunta(${i})" class="w-8 h-8 rounded-lg text-xs font-bold border transition ${colorBtn}">${i + 1}</button>`;
+            }
 
             container.innerHTML = `
                 <div class="space-y-4">
-                    <div class="flex justify-between items-center text-xs text-slate-400">
-                        <span class="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md font-medium text-slate-300">Pregunta ${indiceActual + 1} de ${listaPreguntas.length} | Área ${p.area || 'A'} - ${p.curso || 'Derecho'}</span>
-                        <span id="reloj-pregunta" class="text-amber-400 font-mono font-semibold">⏱️ Tiempo en esta pregunta: 0s</span>
-                    </div>
-                    <h3 class="text-base md:text-lg font-medium text-white leading-relaxed">${p.enunciado || 'Pregunta sin texto'}</h3>
-                    
-                    <div class="space-y-2.5 mt-4" id="lista-opciones">
-                        <div onclick="verificarRespuesta('A', this)" data-letra="A" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">A) ${altA}</div>
-                        <div onclick="verificarRespuesta('B', this)" data-letra="B" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">B) ${altB}</div>
-                        <div onclick="verificarRespuesta('C', this)" data-letra="C" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">C) ${altC}</div>
-                        <div onclick="verificarRespuesta('D', this)" data-letra="D" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">D) ${altD}</div>
-                        <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">E) ${altE}</div>
+                    <!-- Selector rápido de preguntas -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                        ${botonesNavegacion}
                     </div>
 
-                    <!-- Cuadro interactivo del Director Académico -->
-                    <div id="resultado-container" class="hidden mt-6 p-5 bg-slate-950 rounded-xl border border-slate-800 text-sm space-y-4 shadow-inner">
+                    <div class="flex justify-between items-center text-xs text-slate-400 pt-2">
+                        <span class="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md font-medium text-slate-300">Pregunta ${indiceActual + 1} de ${listaPreguntas.length} | ${p.curso || 'Derecho'}</span>
+                        <span class="text-amber-400 font-semibold">${p.tema || 'DECO'}</span>
+                    </div>
+
+                    <h3 class="text-base md:text-lg font-medium text-white leading-relaxed">${p.enunciado || 'Sin enunciado'}</h3>
+                    
+                    <div class="space-y-2.5 mt-4" id="lista-opciones">
+                        ${['A', 'B', 'C', 'D', 'E'].map(letra => {
+                            let textoOpt = opts[letra] || '';
+                            if (!textoOpt) return '';
+                            let extraClase = "bg-slate-950/60 hover:bg-slate-800 border-slate-800 text-slate-200";
+                            
+                            if (respuestaGuardada) {
+                                if (letra === respuestaGuardada.claveCorrecta) {
+                                    extraClase = "bg-emerald-950/50 border-emerald-500 text-emerald-300 font-semibold";
+                                } else if (letra === respuestaGuardada.elegida && !respuestaGuardada.esCorrecta) {
+                                    extraClase = "bg-rose-950/50 border-rose-500 text-rose-300";
+                                }
+                            }
+                            return `<div onclick="verificarRespuesta('${letra}', this)" data-letra="${letra}" class="opcion-btn p-3.5 border rounded-xl cursor-pointer transition select-none text-sm md:text-base ${extraClase}">${letra}) ${textoOpt}</div>`;
+                        }).join('')}
+                    </div>
+
+                    <!-- Cuadro del Director Académico -->
+                    <div id="resultado-container" class="${respuestaGuardada ? '' : 'hidden'} mt-6 p-5 bg-slate-950 rounded-xl border border-slate-800 text-sm space-y-4 shadow-inner">
                         <div>
-                            <strong id="texto-estado" class="block mb-1 text-base"></strong>
+                            <strong id="texto-estado" class="block mb-1 text-base ${respuestaGuardada?.esCorrecta ? 'text-emerald-400' : 'text-rose-400'}">
+                                ${respuestaGuardada ? (respuestaGuardada.esCorrecta ? '¡Respuesta Correcta! ✔' : `Error en técnica DECO. La clave correcta es la ${respuestaGuardada.claveCorrecta}.`) : ''}
+                            </strong>
                             <div class="mt-2 text-slate-300 border-l-2 border-red-500 pl-3 py-1 bg-red-950/10 rounded-r-lg">
                                 <strong class="text-red-400 block mb-0.5 font-semibold">Director Académico (Análisis Técnico y Corrección):</strong> 
-                                <span id="texto-justificacion"></span>
+                                <span id="texto-justificacion">${p.justificacion || 'Análisis lógico y riguroso exigido por el estándar DECO.'}</span>
                             </div>
                         </div>
-                        <button onclick="siguientePregunta()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition shadow-md">
-                            Siguiente Pregunta ➡
-                        </button>
+                        <div class="flex gap-3 pt-2">
+                            <button onclick="cambiarPregunta(-1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 rounded-xl transition">
+                                ⬅ Anterior
+                            </button>
+                            <button onclick="cambiarPregunta(1)" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl transition">
+                                Siguiente ➡
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex justify-between items-center border-t border-slate-800 mt-6">
+                        <button onclick="cambiarPregunta(-1)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg">⬅ Anterior</button>
+                        <button onclick="mostrarInformeFinal()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg">Finalizar y Ver Informe 🏁</button>
+                        <button onclick="cambiarPregunta(1)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg">Siguiente ➡</button>
                     </div>
                 </div>
             `;
-
-            // Actualizar texto del reloj de pregunta en vivo
-            window.tempPreguntaIntervalUI = setInterval(() => {
-                const relojEl = document.getElementById('reloj-pregunta');
-                if (relojEl) relojEl.innerText = `⏱️ Tiempo en esta pregunta: ${segundosActualesPregunta}s`;
-            }, 1000);
         }
 
         function verificarRespuesta(letraElegida, elemento) {
-            if (tiempoPreguntaInterval) clearInterval(tiempoPreguntaInterval);
-            if (window.tempPreguntaIntervalUI) clearInterval(window.tempPreguntaIntervalUI);
-
-            // Guardar el tiempo invertido en esta pregunta
-            estadisticas.tiemposPorPregunta.push({
-                pregunta: indiceActual + 1,
-                segundos: segundosActualesPregunta
-            });
-
-            const botones = document.querySelectorAll('.opcion-btn');
-            botones.forEach(btn => btn.style.pointerEvents = 'none');
-
             const p = listaPreguntas[indiceActual];
             const claveCorrecta = String(p.clave_correcta || '').trim().toUpperCase();
+            const esCorrecta = (letraElegida === claveCorrecta);
+
+            // Registrar respuesta
+            estadisticas.respuestasUsuario[indiceActual] = {
+                elegida: letraElegida,
+                claveCorrecta: claveCorrecta,
+                esCorrecta: esCorrecta
+            };
+
             const resultadoDiv = document.getElementById('resultado-container');
             const textoEstado = document.getElementById('texto-estado');
-            const textoJustificacion = document.getElementById('texto-justificacion');
-
-            estadisticas.respondidas++;
             resultadoDiv.classList.remove('hidden');
-            textoJustificacion.innerText = p.justificacion || p.explicacion || 'Análisis lógico y riguroso exigido por el estándar DECO.';
 
-            if (letraElegida === claveCorrecta) {
-                estadisticas.aciertos++;
-                elemento.className = "p-3.5 bg-emerald-950/50 border border-emerald-500/50 text-emerald-300 rounded-xl transition select-none text-sm md:text-base";
-                textoEstado.innerHTML = `¡Respuesta Correcta! Rigor analítico validado en ${segundosActualesPregunta}s. ✔`;
+            if (esCorrecta) {
+                textoEstado.innerText = "¡Respuesta Correcta! ✔";
                 textoEstado.className = "block mb-1 text-emerald-400 font-bold text-base";
             } else {
-                elemento.className = "p-3.5 bg-rose-950/50 border border-rose-500/50 text-rose-300 rounded-xl transition select-none text-sm md:text-base";
-                textoEstado.innerHTML = `Error en técnica DECO (invertiste ${segundosActualesPregunta}s). La clave correcta es la <strong>${claveCorrecta}</strong>.`;
+                textoEstado.innerText = `Error en técnica DECO. La clave correcta es la ${claveCorrecta}.`;
                 textoEstado.className = "block mb-1 text-rose-400 font-bold text-base";
-
-                botones.forEach(btn => {
-                    if (btn.getAttribute('data-letra') === claveCorrecta) {
-                        btn.className = "p-3.5 bg-emerald-950/50 border border-emerald-500/50 text-emerald-300 rounded-xl transition select-none text-sm md:text-base";
-                    }
-                });
             }
 
             actualizarDashboard();
+            renderizarPreguntaActual(); // Actualiza colores y grilla superior
         }
 
-        function siguientePregunta() {
-            indiceActual++;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        function cambiarPregunta(delta) {
+            indiceActual += delta;
+            if (indiceActual < 0) indiceActual = 0;
+            if (indiceActual >= listaPreguntas.length) indiceActual = listaPreguntas.length - 1;
+            renderizarPreguntaActual();
+        }
+
+        function irAPregunta(index) {
+            indiceActual = index;
             renderizarPreguntaActual();
         }
 
         function mostrarInformeFinal() {
             if (timerGlobalInterval) clearInterval(timerGlobalInterval);
-            if (tiempoPreguntaInterval) clearInterval(tiempoPreguntaInterval);
-            if (window.tempPreguntaIntervalUI) clearInterval(window.tempPreguntaIntervalUI);
-
             document.getElementById('cronometro-global').classList.add('hidden');
             const container = document.getElementById('app-container');
             
-            const respondidas = estadisticas.respondidas;
-            const aciertos = estadisticas.aciertos;
-            const errores = respondidas - aciertos;
+            const total = listaPreguntas.length;
+            const respondidasSet = Object.keys(estadisticas.respuestasUsuario).length;
+            let aciertos = 0;
+            
+            for (let idx in estadisticas.respuestasUsuario) {
+                if (estadisticas.respuestasUsuario[idx].esCorrecta) aciertos++;
+            }
+            const errores = respondidasSet - aciertos;
             
             let puntajeFinal = (aciertos * 20) - (errores * 1.125);
             if (puntajeFinal < 0) puntajeFinal = 0;
             puntajeFinal = Math.round(puntajeFinal);
 
-            const tasaFinal = respondidas > 0 ? Math.round((aciertos / respondidas) * 100) : 0;
-            
-            // Calcular tiempo promedio por pregunta
-            const totalSegundos = estadisticas.tiemposPorPregunta.reduce((acc, curr) => acc + curr.segundos, 0);
-            const promedioSegundos = respondidas > 0 ? Math.round(totalSegundos / respondidas) : 0;
+            const tasaFinal = respondidasSet > 0 ? Math.round((aciertos / respondidasSet) * 100) : 0;
 
             container.innerHTML = `
                 <div class="text-center py-8 space-y-6">
                     <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
-                        Simulacro Concluido • Baremos y Tiempos UNMSM
+                        Simulacro Concluido • Baremos Oficiales UNMSM
                     </div>
                     <h2 class="text-2xl font-bold text-white">Informe de Rendimiento para Derecho</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg mx-auto text-left bg-slate-950 p-4 rounded-xl border border-slate-800">
@@ -318,15 +305,11 @@
                         </div>
                         <div>
                             <span class="text-xs text-slate-400 block">Precisión Global:</span>
-                            <span class="text-lg font-bold text-emerald-400">${tasaFinal}% (${aciertos} correctas, ${errores} errores)</span>
-                        </div>
-                        <div class="md:col-span-2 pt-2 border-t border-slate-800">
-                            <span class="text-xs text-slate-400 block">Ritmo y Tiempo Invertido:</span>
-                            <span class="text-sm font-semibold text-amber-400">Promedio de ${promedioSegundos} segundos por pregunta.</span>
+                            <span class="text-lg font-bold text-emerald-400">${tasaFinal}% (${aciertos} correctas, ${errores} errores de ${respondidasSet} respondidas)</span>
                         </div>
                     </div>
                     <p class="text-sm text-slate-300 max-w-md mx-auto">
-                        ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Superas la valla de los 1500 puntos exigidos para la carrera de Derecho.' : '⚠️ Estás por debajo de los 1500 puntos. Revisa tu velocidad en las lecturas largas y evita caer en los distractores penalizados.'}
+                        ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Superas la valla de los 1500 puntos exigidos para la carrera de Derecho.' : '⚠️ Estás por debajo de los 1500 puntos. Repasa los temas donde fallaste y cuida la penalidad de -1.125.'}
                     </p>
                     <div>
                         <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
