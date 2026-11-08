@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UNMSM Derecho - Centro de Alto Rendimiento DECO</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-y-auto font-sans">
@@ -22,7 +20,7 @@
         </div>
     </header>
 
-    <!-- Dashboard Superior (Métricas de Rendimiento) -->
+    <!-- Dashboard Superior (Métricas en vivo) -->
     <div id="dashboard-container" class="max-w-3xl mx-auto w-full px-4 pt-6 hidden">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center shadow">
@@ -51,15 +49,15 @@
         <div id="app-container" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
             <div class="text-center py-8 space-y-4">
                 <div class="inline-block bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
-                    Admisión UNMSM 2027 • Carrera de Derecho
+                    Admisión UNMSM • Carrera de Derecho
                 </div>
                 <h2 class="text-2xl md:text-3xl font-bold text-white">Centro de Entrenamiento DECO</h2>
                 <p class="text-slate-400 max-w-lg mx-auto text-sm">
-                    Entrenamiento intensivo basado en análisis crítico, comprensión lectora de alto nivel y detección de errores bajo supervisión de IA.
+                    Plataforma inteligente con diagnóstico de errores y rol directivo para asegurar tu ingreso superando los 1500 puntos.
                 </p>
                 <div class="pt-4">
                     <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30">
-                        Iniciar Sesión de Alto Rendimiento 🚀
+                        Iniciar Simulacro de Alto Rendimiento 🚀
                     </button>
                 </div>
             </div>
@@ -72,7 +70,7 @@
         Sistema de Preparación Preuniversitaria • Conectado a Supabase
     </footer>
 
-    <!-- Lógica de Negocio & Director Académico IA -->
+    <!-- Lógica de la App y Director Académico Integrado -->
     <script>
         const SUPABASE_URL = 'https://mjyxpdtpnbrjxtbwtqgz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_6jCQHTCU3n8xzUmvtpAvQQ_ntXFCjK-';
@@ -80,11 +78,7 @@
         let supabaseClient = null;
         let listaPreguntas = [];
         let indiceActual = 0;
-        let estadisticas = {
-            aciertos: 0,
-            respondidas: 0,
-            erroresTipo: { extrapolacion: 0, incompatibilidad: 0, conceptual: 0 }
-        };
+        let estadisticas = { aciertos: 0, respondidas: 0 };
 
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -97,7 +91,7 @@
 
         async function iniciarSimulacro() {
             const container = document.getElementById('app-container');
-            container.innerHTML = `<div class="text-center py-12"><p class="text-slate-400 animate-pulse font-medium">Cargando banco de preguntas DECO de Derecho...</p></div>`;
+            container.innerHTML = `<div class="text-center py-12"><p class="text-slate-400 animate-pulse font-medium">Cargando banco de preguntas DECO...</p></div>`;
 
             if (!supabaseClient) {
                 container.innerHTML = `<p class="text-rose-400 text-center">Falta configurar las credenciales de Supabase.</p>`;
@@ -114,13 +108,13 @@
             }
 
             if (!data || data.length === 0) {
-                container.innerHTML = `<p class="text-amber-400 text-center">No hay preguntas registradas en 'banco_preguntas'. Sube tu CSV en Supabase.</p>`;
+                container.innerHTML = `<p class="text-amber-400 text-center">No hay preguntas registradas en 'banco_preguntas'.</p>`;
                 return;
             }
 
             listaPreguntas = data;
             indiceActual = 0;
-            estadisticas = { aciertos: 0, respondidas: 0, erroresTipo: { extrapolacion: 0, incompatibilidad: 0, conceptual: 0 } };
+            estadisticas = { aciertos: 0, respondidas: 0 };
             
             document.getElementById('dashboard-container').classList.remove('hidden');
             actualizarDashboard();
@@ -133,7 +127,6 @@
             const aciertos = estadisticas.aciertos;
             
             const tasa = respondidas > 0 ? Math.round((aciertos / respondidas) * 100) : 0;
-            // Cálculo estimado sobre base 2000 puntos meta UNMSM
             const puntajeProyectado = respondidas > 0 ? Math.round((aciertos / respondidas) * 2000) : 0;
 
             document.getElementById('stat-puntaje').innerText = `${puntajeProyectado} / 2000`;
@@ -164,11 +157,11 @@
                             </div>
                         </div>
                         <p class="text-sm text-slate-300 max-w-md mx-auto">
-                            ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Estás superando la valla de los 1500 puntos exigida para Derecho en San Marcos.' : '⚠️ Rendimiento por debajo de la meta de 1500 puntos. Debes afinar tu rigor analítico en las preguntas DECO y evitar caer en extrapolaciones.'}
+                            ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Superas la valla de los 1500 puntos para la carrera de Derecho.' : '⚠️ Estás por debajo de los 1500 puntos. Debes afinar tu rigor analítico y evitar caer en distractores de extrapolación.'}
                         </p>
                         <div>
                             <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
-                                Nuevo Simulacro de Entrenamiento 🔄
+                                Nuevo Simulacro 🔄
                             </button>
                         </div>
                     </div>
@@ -208,11 +201,12 @@
                         <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">E) ${altE}</div>
                     </div>
 
+                    <!-- Cuadro interactivo del Director Académico -->
                     <div id="resultado-container" class="hidden mt-6 p-5 bg-slate-950 rounded-xl border border-slate-800 text-sm space-y-4 shadow-inner">
                         <div>
                             <strong id="texto-estado" class="block mb-1 text-base"></strong>
                             <div class="mt-2 text-slate-300 border-l-2 border-red-500 pl-3 py-1 bg-red-950/10 rounded-r-lg">
-                                <strong class="text-red-400 block mb-0.5 font-semibold">Director Académico (Análisis Técnico):</strong> 
+                                <strong class="text-red-400 block mb-0.5 font-semibold">Director Académico (Análisis Técnico y Corrección):</strong> 
                                 <span id="texto-justificacion"></span>
                             </div>
                         </div>
