@@ -110,15 +110,16 @@
                     </div>
                     <h3 class="text-lg font-medium text-white">${p.enunciado || 'Pregunta sin texto'}</h3>
                     
-                    <div class="space-y-2 mt-4" id="lista-opciones">
-                        <div onclick="verificarRespuesta('A', this)" data-letra="A" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">A) ${altA}</div>
-                        <div onclick="verificarRespuesta('B', this)" data-letra="B" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">B) ${altB}</div>
-                        <div onclick="verificarRespuesta('C', this)" data-letra="C" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">C) ${altC}</div>
-                        <div onclick="verificarRespuesta('D', this)" data-letra="D" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">D) ${altD}</div>
-                        <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">E) ${altE}</div>
-                    </div>
+                <div class="space-y-2 mt-4" id="lista-opciones">
+                    <div onclick="verificarRespuesta('A', this)" data-letra="A" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">A) ${altA}</div>
+                    <div onclick="verificarRespuesta('B', this)" data-letra="B" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">B) ${altB}</div>
+                    <div onclick="verificarRespuesta('C', this)" data-letra="C" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">C) ${altC}</div>
+                    <div onclick="verificarRespuesta('D', this)" data-letra="D" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">D) ${altD}</div>
+                    <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">E) ${altE}</div>
+                     </div>                    
 
-                    <div id="resultado-container" class="hidden mt-6 p-4 bg-slate-900/80 rounded-lg border border-slate-700 text-sm text-slate-300">
+
+                        <div id="resultado-container" class="hidden mt-6 p-4 bg-slate-900/80 rounded-lg border border-slate-700 text-sm text-slate-300">
                         <strong id="texto-estado" class="block mb-1"></strong>
                         <strong>Fundamentación:</strong> <span id="texto-justificacion"></span>
                     </div>
