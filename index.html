@@ -40,13 +40,13 @@
         Plataforma optimizada para despliegue en Netlify y Supabase
     </footer>
 
-    <!-- Lógica de Conexión y Renderizado -->
+    <!-- Lógica de Conexión y Renderizado Interactivo -->
     <script>
-        // CONFIGURACIÓN DE SUPABASE
         const SUPABASE_URL = 'https://mjyxpdtpnbrjxtbwtqgz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_6jCQHTCU3n8xzUmvtpAvQQ_ntXFCjK-';
         
         let supabaseClient = null;
+        let preguntaActual = null;
 
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -66,7 +66,6 @@
                 return;
             }
 
-            // Consulta a tu tabla en Supabase
             const { data, error } = await supabaseClient
                 .from('banco_preguntas')
                 .select('*')
@@ -82,16 +81,26 @@
                 return;
             }
 
-            // Renderizar la primera pregunta obtenida
-            const p = data[0];
+            preguntaActual = data[0];
+            renderizarPregunta(preguntaActual);
+        }
 
-            // Manejar 'opciones' ya sea que venga como objeto JSON o como texto string
+        function renderizarPregunta(p) {
+            const container = document.getElementById('app-container');
+
             let opts = {};
             try {
                 opts = typeof p.opciones === 'string' ? JSON.parse(p.opciones) : (p.opciones || {});
             } catch (err) {
                 opts = {};
             }
+
+            // Si no hay opciones en JSON, usamos las columnas individuales o texto por defecto
+            const altA = opts.A || p.alternativa_a || 'Opción A';
+            const altB = opts.B || p.alternativa_b || 'Opción B';
+            const altC = opts.C || p.alternativa_c || 'Opción C';
+            const altD = opts.D || p.alternativa_d || 'Opción D';
+            const altE = opts.E || p.alternativa_e || 'Opción E';
 
             container.innerHTML = `
                 <div class="space-y-4">
@@ -100,19 +109,54 @@
                         <span>${p.tema || 'Modelo DECO'}</span>
                     </div>
                     <h3 class="text-lg font-medium text-white">${p.enunciado || 'Pregunta sin texto'}</h3>
-                    <div class="space-y-2 mt-4">
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">A) ${opts.A || p.alternativa_a || 'Opción A'}</div>
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">B) ${opts.B || p.alternativa_b || 'Opción B'}</div>
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">C) ${opts.C || p.alternativa_c || 'Opción C'}</div>
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">D) ${opts.D || p.alternativa_d || 'Opción D'}</div>
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">E) ${opts.E || p.alternativa_e || 'Opción E'}</div>
+                    
+                    <div class="space-y-2 mt-4" id="lista-opciones">
+                        <div onclick="verificarRespuesta('A', this)" data-letra="A" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">A) ${altA}</div>
+                        <div onclick="verificarRespuesta('B', this)" data-letra="B" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">B) ${altB}</div>
+                        <div onclick="verificarRespuesta('C', this)" data-letra="C" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">C) ${altC}</div>
+                        <div onclick="verificarRespuesta('D', this)" data-letra="D" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">D) ${altD}</div>
+                        <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">E) ${altE}</div>
                     </div>
-                    <div class="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700 text-sm text-slate-300">
-                        <strong>Clave Correcta:</strong> ${p.clave_correcta || 'No especificada'}<br>
-                        <strong>Fundamentación:</strong> ${p.justificacion || p.explicacion || 'Generada mediante Python y Google GenAI.'}
+
+                    <div id="resultado-container" class="hidden mt-6 p-4 bg-slate-900/80 rounded-lg border border-slate-700 text-sm text-slate-300">
+                        <strong id="texto-estado" class="block mb-1"></strong>
+                        <strong>Fundamentación:</strong> <span id="texto-justificacion"></span>
                     </div>
                 </div>
             `;
+        }
+
+        function verificarRespuesta(letraElegida, elemento) {
+            if (!preguntaActual) return;
+
+            // Desactivar clics en todas las opciones una vez seleccionada una
+            const botones = document.querySelectorAll('.opcion-btn');
+            botones.forEach(btn => btn.style.pointerEvents = 'none');
+
+            const claveCorrecta = (preguntaActual.clave_correcta || '').trim().toUpperCase();
+            const resultadoDiv = document.getElementById('resultado-container');
+            const textoEstado = document.getElementById('texto-estado');
+            const textoJustificacion = document.getElementById('texto-justificacion');
+
+            resultadoDiv.classList.remove('hidden');
+            textoJustificacion.innerText = preguntaActual.justificacion || preguntaActual.explicacion || 'Generada mediante Python y Google GenAI.';
+
+            if (letraElegida === claveCorrecta) {
+                elemento.className = "p-3 bg-emerald-600/30 border border-emerald-500 text-emerald-300 rounded-lg transition";
+                textoEstado.innerHTML = "¡Respuesta Correcta! 🎉";
+                textoEstado.className = "block mb-1 text-emerald-400 font-bold";
+            } else {
+                elemento.className = "p-3 bg-rose-600/30 border border-rose-500 text-rose-300 rounded-lg transition";
+                textoEstado.innerHTML = `Respuesta Incorrecta. La clave correcta es la <strong>${claveCorrecta}</strong>.`;
+                textoEstado.className = "block mb-1 text-rose-400 font-bold";
+
+                // Resaltar la correcta
+                botones.forEach(btn => {
+                    if (btn.getAttribute('data-letra') === claveCorrecta) {
+                        btn.className = "p-3 bg-emerald-600/30 border border-emerald-500 text-emerald-300 rounded-lg transition";
+                    }
+                });
+            }
         }
     </script>
 </body>
