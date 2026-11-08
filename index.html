@@ -3,44 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UNMSM - Simulacro DECO & Banco de Preguntas</title>
+    <title>UNMSM Derecho - Centro de Alto Rendimiento DECO</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-y-auto">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-y-auto font-sans">
 
-    <!-- Header -->
-    <header class="bg-slate-800 border-b border-slate-700 p-4 shadow-md sticky top-0 z-10">
+    <!-- Header / Director Académico -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 shadow-md sticky top-0 z-20">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold text-red-500">UNMSM <span class="text-white">Simulador DECO</span></h1>
-            <span id="status-db" class="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2.5 py-1 rounded-full">Conectando a Supabase...</span>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-red-500">UNMSM <span class="text-white">Derecho 1500+</span></h1>
+                <p class="text-xs text-slate-400">Director Académico & Simulador DECO de Alto Rendimiento</p>
+            </div>
+            <span id="status-db" class="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3 py-1 rounded-full font-medium">Conectando...</span>
         </div>
     </header>
 
+    <!-- Dashboard Superior (Métricas de Rendimiento) -->
+    <div id="dashboard-container" class="max-w-3xl mx-auto w-full px-4 pt-6 hidden">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center shadow">
+                <span class="text-xs text-slate-400 block">Puntaje Proyectado</span>
+                <span id="stat-puntaje" class="text-xl font-bold text-red-500">0 / 2000</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center shadow">
+                <span class="text-xs text-slate-400 block">Tasa de Éxito</span>
+                <span id="stat-exito" class="text-xl font-bold text-emerald-400">0%</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center shadow">
+                <span class="text-xs text-slate-400 block">Preguntas Vistas</span>
+                <span id="stat-vistas" class="text-xl font-bold text-blue-400">0 / 0</span>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center shadow">
+                <span class="text-xs text-slate-400 block">Meta Derecho</span>
+                <span class="text-xl font-bold text-amber-400">1500+ pts</span>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Container -->
-    <main class="max-w-2xl mx-auto p-4 w-full flex-grow flex flex-col justify-start py-8">
+    <main class="max-w-3xl mx-auto p-4 w-full flex-grow flex flex-col justify-start py-6">
         
-        <!-- Vista de Carga o Bienvenida -->
-        <div id="app-container" class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-xl">
-            <div class="text-center py-8">
-                <h2 class="text-2xl font-semibold mb-2">Preparación Examen de Admisión</h2>
-                <p class="text-slate-400 mb-6">Banco de preguntas inteligente conectado a Supabase.</p>
-                <button onclick="cargarPreguntas()" class="bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-2.5 rounded-lg transition-all shadow-lg shadow-red-600/20">
-                    Cargar Preguntas
-                </button>
+        <!-- Vista Inicial / Bienvenida -->
+        <div id="app-container" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
+            <div class="text-center py-8 space-y-4">
+                <div class="inline-block bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                    Admisión UNMSM 2027 • Carrera de Derecho
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-white">Centro de Entrenamiento DECO</h2>
+                <p class="text-slate-400 max-w-lg mx-auto text-sm">
+                    Entrenamiento intensivo basado en análisis crítico, comprensión lectora de alto nivel y detección de errores bajo supervisión de IA.
+                </p>
+                <div class="pt-4">
+                    <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30">
+                        Iniciar Sesión de Alto Rendimiento 🚀
+                    </button>
+                </div>
             </div>
         </div>
 
     </main>
 
     <!-- Footer -->
-    <footer class="bg-slate-800 border-t border-slate-700 text-center py-3 text-xs text-slate-500">
-        Plataforma optimizada para despliegue en Netlify y Supabase
+    <footer class="bg-slate-900 border-t border-slate-800 text-center py-3 text-xs text-slate-500">
+        Sistema de Preparación Preuniversitaria • Conectado a Supabase
     </footer>
 
-    <!-- Lógica de Conexión y Simulacro Interactivo -->
+    <!-- Lógica de Negocio & Director Académico IA -->
     <script>
         const SUPABASE_URL = 'https://mjyxpdtpnbrjxtbwtqgz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_6jCQHTCU3n8xzUmvtpAvQQ_ntXFCjK-';
@@ -48,55 +80,97 @@
         let supabaseClient = null;
         let listaPreguntas = [];
         let indiceActual = 0;
+        let estadisticas = {
+            aciertos: 0,
+            respondidas: 0,
+            erroresTipo: { extrapolacion: 0, incompatibilidad: 0, conceptual: 0 }
+        };
 
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            document.getElementById('status-db').innerText = 'Supabase Conectado';
-            document.getElementById('status-db').className = 'text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full';
+            document.getElementById('status-db').innerText = 'Base Conectada';
+            document.getElementById('status-db').className = 'text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full font-medium';
         } catch (e) {
             document.getElementById('status-db').innerText = 'Error de Conexión';
-            document.getElementById('status-db').className = 'text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded-full';
+            document.getElementById('status-db').className = 'text-xs bg-rose-500/10 text-rose-400 border border-rose-500/20 px-3 py-1 rounded-full font-medium';
         }
 
-        async function cargarPreguntas() {
+        async function iniciarSimulacro() {
             const container = document.getElementById('app-container');
-            container.innerHTML = `<div class="text-center py-8"><p class="text-slate-400 animate-pulse">Obteniendo preguntas de la base de datos...</p></div>`;
+            container.innerHTML = `<div class="text-center py-12"><p class="text-slate-400 animate-pulse font-medium">Cargando banco de preguntas DECO de Derecho...</p></div>`;
 
             if (!supabaseClient) {
-                container.innerHTML = `<p class="text-rose-400 text-center">Falta configurar las credenciales de Supabase en el código.</p>`;
+                container.innerHTML = `<p class="text-rose-400 text-center">Falta configurar las credenciales de Supabase.</p>`;
                 return;
             }
 
-            // Traer todas las preguntas sin límite restrictivo
             const { data, error } = await supabaseClient
                 .from('banco_preguntas')
                 .select('*');
 
             if (error) {
-                container.innerHTML = `<p class="text-rose-400 text-center">Error al consultar: ${error.message}</p>`;
+                container.innerHTML = `<p class="text-rose-400 text-center">Error al consultar Supabase: ${error.message}</p>`;
                 return;
             }
 
             if (!data || data.length === 0) {
-                container.innerHTML = `<p class="text-amber-400 text-center">No se encontraron preguntas en la tabla 'banco_preguntas'.</p>`;
+                container.innerHTML = `<p class="text-amber-400 text-center">No hay preguntas registradas en 'banco_preguntas'. Sube tu CSV en Supabase.</p>`;
                 return;
             }
 
             listaPreguntas = data;
             indiceActual = 0;
+            estadisticas = { aciertos: 0, respondidas: 0, erroresTipo: { extrapolacion: 0, incompatibilidad: 0, conceptual: 0 } };
+            
+            document.getElementById('dashboard-container').classList.remove('hidden');
+            actualizarDashboard();
             renderizarPreguntaActual();
+        }
+
+        function actualizarDashboard() {
+            const total = listaPreguntas.length;
+            const respondidas = estadisticas.respondidas;
+            const aciertos = estadisticas.aciertos;
+            
+            const tasa = respondidas > 0 ? Math.round((aciertos / respondidas) * 100) : 0;
+            // Cálculo estimado sobre base 2000 puntos meta UNMSM
+            const puntajeProyectado = respondidas > 0 ? Math.round((aciertos / respondidas) * 2000) : 0;
+
+            document.getElementById('stat-puntaje').innerText = `${puntajeProyectado} / 2000`;
+            document.getElementById('stat-exito').innerText = `${tasa}%`;
+            document.getElementById('stat-vistas').innerText = `${respondidas} / ${total}`;
         }
 
         function renderizarPreguntaActual() {
             if (indiceActual >= listaPreguntas.length) {
                 const container = document.getElementById('app-container');
+                const tasaFinal = Math.round((estadisticas.aciertos / listaPreguntas.length) * 100);
+                const puntajeFinal = Math.round((estadisticas.aciertos / listaPreguntas.length) * 2000);
+
                 container.innerHTML = `
-                    <div class="text-center py-8 space-y-4">
-                        <h2 class="text-2xl font-semibold text-emerald-400">¡Simulacro Finalizado!</h2>
-                        <p class="text-slate-400">Has completado las ${listaPreguntas.length} preguntas disponibles en esta sesión.</p>
-                        <button onclick="cargarPreguntas()" class="bg-red-600 hover:bg-red-500 text-white font-medium px-6 py-2.5 rounded-lg transition-all">
-                            Reiniciar Simulacro
-                        </button>
+                    <div class="text-center py-8 space-y-6">
+                        <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                            Simulacro Concluido • Evaluación del Director Académico
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">Informe de Rendimiento para Derecho</h2>
+                        <div class="grid grid-cols-2 gap-4 max-w-md mx-auto text-left bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div>
+                                <span class="text-xs text-slate-400 block">Puntaje Estimado:</span>
+                                <span class="text-lg font-bold text-red-500">${puntajeFinal} pts</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 block">Precisión Global:</span>
+                                <span class="text-lg font-bold text-emerald-400">${tasaFinal}%</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-300 max-w-md mx-auto">
+                            ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Estás superando la valla de los 1500 puntos exigida para Derecho en San Marcos.' : '⚠️ Rendimiento por debajo de la meta de 1500 puntos. Debes afinar tu rigor analítico en las preguntas DECO y evitar caer en extrapolaciones.'}
+                        </p>
+                        <div>
+                            <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
+                                Nuevo Simulacro de Entrenamiento 🔄
+                            </button>
+                        </div>
                     </div>
                 `;
                 return;
@@ -121,25 +195,28 @@
             container.innerHTML = `
                 <div class="space-y-4">
                     <div class="flex justify-between items-center text-xs text-slate-400">
-                        <span class="bg-slate-700 px-2 py-1 rounded">Pregunta ${indiceActual + 1} de ${listaPreguntas.length} | Área ${p.area || 'A'} - ${p.curso || 'General'}</span>
-                        <span>${p.tema || 'Modelo DECO'}</span>
+                        <span class="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md font-medium text-slate-300">Pregunta ${indiceActual + 1} de ${listaPreguntas.length} | Área ${p.area || 'A'} - ${p.curso || 'Derecho / Habilidad'}</span>
+                        <span class="text-red-400 font-semibold">${p.tema || 'Modelo DECO San Marcos'}</span>
                     </div>
-                    <h3 class="text-lg font-medium text-white">${p.enunciado || 'Pregunta sin texto'}</h3>
+                    <h3 class="text-base md:text-lg font-medium text-white leading-relaxed">${p.enunciado || 'Pregunta sin texto'}</h3>
                     
-                    <div class="space-y-2 mt-4" id="lista-opciones">
-                        <div onclick="verificarRespuesta('A', this)" data-letra="A" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">A) ${altA}</div>
-                        <div onclick="verificarRespuesta('B', this)" data-letra="B" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">B) ${altB}</div>
-                        <div onclick="verificarRespuesta('C', this)" data-letra="C" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">C) ${altC}</div>
-                        <div onclick="verificarRespuesta('D', this)" data-letra="D" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">D) ${altD}</div>
-                        <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition select-none">E) ${altE}</div>
+                    <div class="space-y-2.5 mt-4" id="lista-opciones">
+                        <div onclick="verificarRespuesta('A', this)" data-letra="A" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">A) ${altA}</div>
+                        <div onclick="verificarRespuesta('B', this)" data-letra="B" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">B) ${altB}</div>
+                        <div onclick="verificarRespuesta('C', this)" data-letra="C" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">C) ${altC}</div>
+                        <div onclick="verificarRespuesta('D', this)" data-letra="D" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">D) ${altD}</div>
+                        <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">E) ${altE}</div>
                     </div>
 
-                    <div id="resultado-container" class="hidden mt-6 p-4 bg-slate-900/80 rounded-lg border border-slate-700 text-sm text-slate-300 space-y-3">
+                    <div id="resultado-container" class="hidden mt-6 p-5 bg-slate-950 rounded-xl border border-slate-800 text-sm space-y-4 shadow-inner">
                         <div>
-                            <strong id="texto-estado" class="block mb-1"></strong>
-                            <strong>Fundamentación:</strong> <span id="texto-justificacion"></span>
+                            <strong id="texto-estado" class="block mb-1 text-base"></strong>
+                            <div class="mt-2 text-slate-300 border-l-2 border-red-500 pl-3 py-1 bg-red-950/10 rounded-r-lg">
+                                <strong class="text-red-400 block mb-0.5 font-semibold">Director Académico (Análisis Técnico):</strong> 
+                                <span id="texto-justificacion"></span>
+                            </div>
                         </div>
-                        <button onclick="siguientePregunta()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-lg transition shadow-lg">
+                        <button onclick="siguientePregunta()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition shadow-md">
                             Siguiente Pregunta ➡
                         </button>
                     </div>
@@ -157,29 +234,33 @@
             const textoEstado = document.getElementById('texto-estado');
             const textoJustificacion = document.getElementById('texto-justificacion');
 
+            estadisticas.respondidas++;
             resultadoDiv.classList.remove('hidden');
-            textoJustificacion.innerText = p.justificacion || p.explicacion || 'Generada mediante Python y Google GenAI.';
+            textoJustificacion.innerText = p.justificacion || p.explicacion || 'Análisis lógico y riguroso exigido por el estándar DECO.';
 
             if (letraElegida === claveCorrecta) {
-                elemento.className = "p-3 bg-emerald-600/30 border border-emerald-500 text-emerald-300 rounded-lg transition select-none";
-                textoEstado.innerHTML = "¡Respuesta Correcta! 🎉";
-                textoEstado.className = "block mb-1 text-emerald-400 font-bold";
+                estadisticas.aciertos++;
+                elemento.className = "p-3.5 bg-emerald-950/50 border border-emerald-500/50 text-emerald-300 rounded-xl transition select-none text-sm md:text-base";
+                textoEstado.innerHTML = "¡Respuesta Correcta! Rigor analítico validado. ✔";
+                textoEstado.className = "block mb-1 text-emerald-400 font-bold text-base";
             } else {
-                elemento.className = "p-3 bg-rose-600/30 border border-rose-500 text-rose-300 rounded-lg transition select-none";
-                textoEstado.innerHTML = `Respuesta Incorrecta. La clave correcta es la <strong>${claveCorrecta}</strong>.`;
-                textoEstado.className = "block mb-1 text-rose-400 font-bold";
+                elemento.className = "p-3.5 bg-rose-950/50 border border-rose-500/50 text-rose-300 rounded-xl transition select-none text-sm md:text-base";
+                textoEstado.innerHTML = `Error en técnica DECO. La clave correcta es la <strong>${claveCorrecta}</strong>.`;
+                textoEstado.className = "block mb-1 text-rose-400 font-bold text-base";
 
                 botones.forEach(btn => {
                     if (btn.getAttribute('data-letra') === claveCorrecta) {
-                        btn.className = "p-3 bg-emerald-600/30 border border-emerald-500 text-emerald-300 rounded-lg transition select-none";
+                        btn.className = "p-3.5 bg-emerald-950/50 border border-emerald-500/50 text-emerald-300 rounded-xl transition select-none text-sm md:text-base";
                     }
                 });
             }
+
+            actualizarDashboard();
         }
 
         function siguientePregunta() {
             indiceActual++;
-            window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube arriba al cambiar de pregunta
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             renderizarPreguntaActual();
         }
     </script>
