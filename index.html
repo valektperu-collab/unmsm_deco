@@ -52,11 +52,11 @@
                 </div>
                 <h2 class="text-2xl md:text-3xl font-bold text-white">Centro de Entrenamiento DECO</h2>
                 <p class="text-slate-400 max-w-lg mx-auto text-sm">
-                    Plataforma inteligente con diagnóstico de errores y rol directivo para asegurar tu ingreso superando los 1500 puntos.
+                    Plataforma interactiva con corrección guiada y rol directivo para superar la valla de los 1500 puntos.
                 </p>
                 <div class="pt-4">
                     <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30">
-                        Iniciar Simulacro de Alto Rendimiento 🚀
+                        Iniciar Sesión de Entrenamiento 🚀
                     </button>
                 </div>
             </div>
@@ -132,40 +132,6 @@
         }
 
         function renderizarPreguntaActual() {
-            if (indiceActual >= listaPreguntas.length) {
-                const container = document.getElementById('app-container');
-                const tasaFinal = estadisticas.respondidas > 0 ? Math.round((estadisticas.aciertos / estadisticas.respondidas) * 100) : 0;
-                const puntajeFinal = estadisticas.respondidas > 0 ? Math.round((estadisticas.aciertos / estadisticas.respondidas) * 2000) : 0;
-
-                container.innerHTML = `
-                    <div class="text-center py-8 space-y-6">
-                        <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
-                            Simulacro Concluido • Evaluación del Director Académico
-                        </div>
-                        <h2 class="text-2xl font-bold text-white">Informe de Rendimiento para Derecho</h2>
-                        <div class="grid grid-cols-2 gap-4 max-w-md mx-auto text-left bg-slate-950 p-4 rounded-xl border border-slate-800">
-                            <div>
-                                <span class="text-xs text-slate-400 block">Puntaje Estimado:</span>
-                                <span class="text-lg font-bold text-red-500">${puntajeFinal} pts</span>
-                            </div>
-                            <div>
-                                <span class="text-xs text-slate-400 block">Precisión Global:</span>
-                                <span class="text-lg font-bold text-emerald-400">${tasaFinal}%</span>
-                            </div>
-                        </div>
-                        <p class="text-sm text-slate-300 max-w-md mx-auto">
-                            ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Superas la valla de los 1500 puntos para la carrera de Derecho.' : '⚠️ Estás por debajo de los 1500 puntos. Repasa el fundamento de cada error para ajustar tu técnica de lectura.'}
-                        </p>
-                        <div>
-                            <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
-                                Nuevo Simulacro 🔄
-                            </button>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-
             const p = listaPreguntas[indiceActual];
             const container = document.getElementById('app-container');
 
@@ -198,7 +164,7 @@
                         <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">E) ${altE}</div>
                     </div>
 
-                    <!-- Cuadro interactivo del Director Académico -->
+                    <!-- Cuadro interactivo del Director Académico (Aparece inmediatamente al responder) -->
                     <div id="resultado-container" class="hidden mt-6 p-5 bg-slate-950 rounded-xl border border-slate-800 text-sm space-y-4 shadow-inner">
                         <div>
                             <strong id="texto-estado" class="block mb-1 text-base"></strong>
@@ -220,7 +186,6 @@
             botones.forEach(btn => btn.style.pointerEvents = 'none');
 
             const p = listaPreguntas[indiceActual];
-            // Limpieza estricta de la clave correcta (quita espacios y pasa a mayúscula)
             const claveCorrecta = String(p.clave_correcta || '').trim().toUpperCase();
             const resultadoDiv = document.getElementById('resultado-container');
             const textoEstado = document.getElementById('texto-estado');
@@ -252,8 +217,45 @@
 
         function siguientePregunta() {
             indiceActual++;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            renderizarPreguntaActual();
+            if (indiceActual >= listaPreguntas.length) {
+                mostrarInformeFinal();
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                renderizarPreguntaActual();
+            }
+        }
+
+        function mostrarInformeFinal() {
+            const container = document.getElementById('app-container');
+            const tasaFinal = estadisticas.respondidas > 0 ? Math.round((estadisticas.aciertos / estadisticas.respondidas) * 100) : 0;
+            const puntajeFinal = estadisticas.respondidas > 0 ? Math.round((estadisticas.aciertos / estadisticas.respondidas) * 2000) : 0;
+
+            container.innerHTML = `
+                <div class="text-center py-8 space-y-6">
+                    <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                        Simulacro Concluido • Evaluación del Director Académico
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Informe de Rendimiento para Derecho</h2>
+                    <div class="grid grid-cols-2 gap-4 max-w-md mx-auto text-left bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <div>
+                            <span class="text-xs text-slate-400 block">Puntaje Estimado:</span>
+                            <span class="text-lg font-bold text-red-500">${puntajeFinal} pts</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Precisión Global:</span>
+                            <span class="text-lg font-bold text-emerald-400">${tasaFinal}%</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-300 max-w-md mx-auto">
+                        ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Superas la valla de los 1500 puntos para la carrera de Derecho.' : '⚠️ Estás por debajo de los 1500 puntos. Repasa los fundamentos técnicos de cada error para ajustar tu lectura.'}
+                    </p>
+                    <div>
+                        <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
+                            Nuevo Simulacro 🔄
+                        </button>
+                    </div>
+                </div>
+            `;
         }
     </script>
 </body>
