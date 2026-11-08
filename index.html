@@ -42,7 +42,7 @@
 
     <!-- Lógica de Conexión y Renderizado -->
     <script>
-        // CONFIGURACIÓN DE SUPABASE (Reemplaza con tus credenciales reales)
+        // CONFIGURACIÓN DE SUPABASE
         const SUPABASE_URL = 'https://mjyxpdtpnbrjxtbwtqgz.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_6jCQHTCU3n8xzUmvtpAvQQ_ntXFCjK-';
         
@@ -66,7 +66,7 @@
                 return;
             }
 
-            // Consulta a tu tabla en Supabase (ej: 'banco_preguntas')
+            // Consulta a tu tabla en Supabase
             const { data, error } = await supabaseClient
                 .from('banco_preguntas')
                 .select('*')
@@ -78,27 +78,38 @@
             }
 
             if (!data || data.length === 0) {
-                container.innerHTML = `<p class="text-amber-400 text-center">No se encontraron preguntas en la tabla 'banco_preguntas'. ¡Ejecuta tus scripts de Python para llenarla!</p>`;
+                container.innerHTML = `<p class="text-amber-400 text-center">No se encontraron preguntas en la tabla 'banco_preguntas'.</p>`;
                 return;
             }
 
             // Renderizar la primera pregunta obtenida
             const p = data[0];
+
+            // Manejar 'opciones' ya sea que venga como objeto JSON o como texto string
+            let opts = {};
+            try {
+                opts = typeof p.opciones === 'string' ? JSON.parse(p.opciones) : (p.opciones || {});
+            } catch (err) {
+                opts = {};
+            }
+
             container.innerHTML = `
                 <div class="space-y-4">
                     <div class="flex justify-between items-center text-xs text-slate-400">
-                        <span class="bg-slate-700 px-2 py-1 rounded">${p.area || 'Área D/E'}</span>
-                        <span>Modelo DECO</span>
+                        <span class="bg-slate-700 px-2 py-1 rounded">Área ${p.area || 'A'} - ${p.curso || 'General'}</span>
+                        <span>${p.tema || 'Modelo DECO'}</span>
                     </div>
-                    <h3 class="text-lg font-medium text-white">${p.enunciado || p.pregunta || 'Pregunta sin texto'}</h3>
+                    <h3 class="text-lg font-medium text-white">${p.enunciado || 'Pregunta sin texto'}</h3>
                     <div class="space-y-2 mt-4">
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">A) ${p.alternativa_a || 'Opción A'}</div>
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">B) ${p.alternativa_b || 'Opción B'}</div>
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">C) ${p.alternativa_c || 'Opción C'}</div>
-                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">D) ${p.alternativa_d || 'Opción D'}</div>
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">A) ${opts.A || p.alternativa_a || 'Opción A'}</div>
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">B) ${opts.B || p.alternativa_b || 'Opción B'}</div>
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">C) ${opts.C || p.alternativa_c || 'Opción C'}</div>
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">D) ${opts.D || p.alternativa_d || 'Opción D'}</div>
+                        <div class="p-3 bg-slate-700/50 hover:bg-slate-700 border border-slate-600 rounded-lg cursor-pointer transition">E) ${opts.E || p.alternativa_e || 'Opción E'}</div>
                     </div>
                     <div class="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700 text-sm text-slate-300">
-                        <strong>Fundamentación IA:</strong> ${p.explicacion || p.solucionario || 'Generada mediante Python y Google GenAI.'}
+                        <strong>Clave Correcta:</strong> ${p.clave_correcta || 'No especificada'}<br>
+                        <strong>Fundamentación:</strong> ${p.justificacion || p.explicacion || 'Generada mediante Python y Google GenAI.'}
                     </div>
                 </div>
             `;
