@@ -16,7 +16,10 @@
                 <h1 class="text-xl font-bold tracking-tight text-red-500">UNMSM <span class="text-white">Derecho 1500+</span></h1>
                 <p class="text-xs text-slate-400">Director Académico & Simulador DECO de Alto Rendimiento</p>
             </div>
-            <span id="status-db" class="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3 py-1 rounded-full font-medium">Conectando...</span>
+            <div class="flex items-center gap-3">
+                <span id="cronometro-global" class="text-xs bg-slate-800 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full font-mono font-bold hidden">⏱️ 03:00:00</span>
+                <span id="status-db" class="text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-3 py-1 rounded-full font-medium">Conectando...</span>
+            </div>
         </div>
     </header>
 
@@ -24,7 +27,7 @@
     <div id="dashboard-container" class="max-w-3xl mx-auto w-full px-4 pt-6 hidden">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center shadow">
-                <span class="text-xs text-slate-400 block">Puntaje Proyectado</span>
+                <span class="text-xs text-slate-400 block">Puntaje Real (UNMSM)</span>
                 <span id="stat-puntaje" class="text-xl font-bold text-red-500">0 / 2000</span>
             </div>
             <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl text-center shadow">
@@ -52,11 +55,11 @@
                 </div>
                 <h2 class="text-2xl md:text-3xl font-bold text-white">Centro de Entrenamiento DECO</h2>
                 <p class="text-slate-400 max-w-lg mx-auto text-sm">
-                    Plataforma interactiva con corrección guiada y rol directivo para superar la valla de los 1500 puntos.
+                    Simulador con control de tiempo oficial (3 horas), penalidades UNMSM (-1.125 por error) y corrección guiada.
                 </p>
                 <div class="pt-4">
                     <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-red-600/30">
-                        Iniciar Sesión de Entrenamiento 🚀
+                        Iniciar Simulacro Oficial 🚀
                     </button>
                 </div>
             </div>
@@ -75,7 +78,14 @@
         let supabaseClient = null;
         let listaPreguntas = [];
         let indiceActual = 0;
-        let estadisticas = { aciertos: 0, respondidas: 0 };
+        let estadisticas = { aciertos: 0, respondidas: 0, tiemposPorPregunta: [] };
+        
+        // Control de tiempo
+        let tiempoRestanteGlobal = 3 * 3600; // 3 horas en segundos
+        let timerGlobalInterval = null;
+        let tiempoInicioPregunta = 0;
+        let tiempoPreguntaInterval = null;
+        let segundosActualesPregunta = 0;
 
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -111,29 +121,66 @@
 
             listaPreguntas = data;
             indiceActual = 0;
-            estadisticas = { aciertos: 0, respondidas: 0 };
+            estadisticas = { aciertos: 0, respondidas: 0, tiemposPorPregunta: [] };
             
             document.getElementById('dashboard-container').classList.remove('hidden');
+            document.getElementById('cronometro-global').classList.remove('hidden');
+            
+            iniciarCronometroGlobal();
             actualizarDashboard();
             renderizarPreguntaActual();
+        }
+
+        function iniciarCronometroGlobal() {
+            if (timerGlobalInterval) clearInterval(timerGlobalInterval);
+            tiempoRestanteGlobal = 3 * 3600;
+            
+            timerGlobalInterval = setInterval(() => {
+                if (tiempoRestanteGlobal <= 0) {
+                    clearInterval(timerGlobalInterval);
+                    mostrarInformeFinal();
+                    return;
+                }
+                tiempoRestanteGlobal--;
+                let h = Math.floor(tiempoRestanteGlobal / 3600);
+                let m = Math.floor((tiempoRestanteGlobal % 3600) / 60);
+                let s = tiempoRestanteGlobal % 60;
+                document.getElementById('cronometro-global').innerText = `⏱️ ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }, 1000);
         }
 
         function actualizarDashboard() {
             const total = listaPreguntas.length;
             const respondidas = estadisticas.respondidas;
             const aciertos = estadisticas.aciertos;
+            const errores = respondidas - aciertos;
             
-            const tasa = respondidas > 0 ? Math.round((aciertos / respondidas) * 100) : 0;
-            const puntajeProyectado = respondidas > 0 ? Math.round((aciertos / respondidas) * 2000) : 0;
+            // Fórmula oficial UNMSM: +20 por acierto, -1.125 por error
+            let puntajeReal = (aciertos * 20) - (errores * 1.125);
+            if (puntajeReal < 0) puntajeReal = 0;
 
-            document.getElementById('stat-puntaje').innerText = `${puntajeProyectado} / 2000`;
+            const tasa = respondidas > 0 ? Math.round((aciertos / respondidas) * 100) : 0;
+
+            document.getElementById('stat-puntaje').innerText = `${Math.round(puntajeReal)} / 2000`;
             document.getElementById('stat-exito').innerText = `${tasa}%`;
             document.getElementById('stat-vistas').innerText = `${respondidas} / ${total}`;
         }
 
         function renderizarPreguntaActual() {
+            if (indiceActual >= listaPreguntas.length) {
+                mostrarInformeFinal();
+                return;
+            }
+
             const p = listaPreguntas[indiceActual];
             const container = document.getElementById('app-container');
+
+            // Iniciar conteo de tiempo para esta pregunta específica
+            segundosActualesPregunta = 0;
+            if (tiempoPreguntaInterval) clearInterval(tiempoPreguntaInterval);
+            tiempoPreguntaInterval = setInterval(() => {
+                segundosActualesPregunta++;
+            }, 1000);
 
             let opts = {};
             try {
@@ -151,8 +198,8 @@
             container.innerHTML = `
                 <div class="space-y-4">
                     <div class="flex justify-between items-center text-xs text-slate-400">
-                        <span class="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md font-medium text-slate-300">Pregunta ${indiceActual + 1} de ${listaPreguntas.length} | Área ${p.area || 'A'} - ${p.curso || 'Derecho / Habilidad'}</span>
-                        <span class="text-red-400 font-semibold">${p.tema || 'Modelo DECO San Marcos'}</span>
+                        <span class="bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-md font-medium text-slate-300">Pregunta ${indiceActual + 1} de ${listaPreguntas.length} | Área ${p.area || 'A'} - ${p.curso || 'Derecho'}</span>
+                        <span id="reloj-pregunta" class="text-amber-400 font-mono font-semibold">⏱️ Tiempo en esta pregunta: 0s</span>
                     </div>
                     <h3 class="text-base md:text-lg font-medium text-white leading-relaxed">${p.enunciado || 'Pregunta sin texto'}</h3>
                     
@@ -164,7 +211,7 @@
                         <div onclick="verificarRespuesta('E', this)" data-letra="E" class="opcion-btn p-3.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition select-none text-sm md:text-base">E) ${altE}</div>
                     </div>
 
-                    <!-- Cuadro interactivo del Director Académico (Aparece inmediatamente al responder) -->
+                    <!-- Cuadro interactivo del Director Académico -->
                     <div id="resultado-container" class="hidden mt-6 p-5 bg-slate-950 rounded-xl border border-slate-800 text-sm space-y-4 shadow-inner">
                         <div>
                             <strong id="texto-estado" class="block mb-1 text-base"></strong>
@@ -179,9 +226,24 @@
                     </div>
                 </div>
             `;
+
+            // Actualizar texto del reloj de pregunta en vivo
+            window.tempPreguntaIntervalUI = setInterval(() => {
+                const relojEl = document.getElementById('reloj-pregunta');
+                if (relojEl) relojEl.innerText = `⏱️ Tiempo en esta pregunta: ${segundosActualesPregunta}s`;
+            }, 1000);
         }
 
         function verificarRespuesta(letraElegida, elemento) {
+            if (tiempoPreguntaInterval) clearInterval(tiempoPreguntaInterval);
+            if (window.tempPreguntaIntervalUI) clearInterval(window.tempPreguntaIntervalUI);
+
+            // Guardar el tiempo invertido en esta pregunta
+            estadisticas.tiemposPorPregunta.push({
+                pregunta: indiceActual + 1,
+                segundos: segundosActualesPregunta
+            });
+
             const botones = document.querySelectorAll('.opcion-btn');
             botones.forEach(btn => btn.style.pointerEvents = 'none');
 
@@ -198,11 +260,11 @@
             if (letraElegida === claveCorrecta) {
                 estadisticas.aciertos++;
                 elemento.className = "p-3.5 bg-emerald-950/50 border border-emerald-500/50 text-emerald-300 rounded-xl transition select-none text-sm md:text-base";
-                textoEstado.innerHTML = "¡Respuesta Correcta! Rigor analítico validado. ✔";
+                textoEstado.innerHTML = `¡Respuesta Correcta! Rigor analítico validado en ${segundosActualesPregunta}s. ✔`;
                 textoEstado.className = "block mb-1 text-emerald-400 font-bold text-base";
             } else {
                 elemento.className = "p-3.5 bg-rose-950/50 border border-rose-500/50 text-rose-300 rounded-xl transition select-none text-sm md:text-base";
-                textoEstado.innerHTML = `Error en técnica DECO. La clave correcta es la <strong>${claveCorrecta}</strong>.`;
+                textoEstado.innerHTML = `Error en técnica DECO (invertiste ${segundosActualesPregunta}s). La clave correcta es la <strong>${claveCorrecta}</strong>.`;
                 textoEstado.className = "block mb-1 text-rose-400 font-bold text-base";
 
                 botones.forEach(btn => {
@@ -217,37 +279,54 @@
 
         function siguientePregunta() {
             indiceActual++;
-            if (indiceActual >= listaPreguntas.length) {
-                mostrarInformeFinal();
-            } else {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                renderizarPreguntaActual();
-            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            renderizarPreguntaActual();
         }
 
         function mostrarInformeFinal() {
+            if (timerGlobalInterval) clearInterval(timerGlobalInterval);
+            if (tiempoPreguntaInterval) clearInterval(tiempoPreguntaInterval);
+            if (window.tempPreguntaIntervalUI) clearInterval(window.tempPreguntaIntervalUI);
+
+            document.getElementById('cronometro-global').classList.add('hidden');
             const container = document.getElementById('app-container');
-            const tasaFinal = estadisticas.respondidas > 0 ? Math.round((estadisticas.aciertos / estadisticas.respondidas) * 100) : 0;
-            const puntajeFinal = estadisticas.respondidas > 0 ? Math.round((estadisticas.aciertos / estadisticas.respondidas) * 2000) : 0;
+            
+            const respondidas = estadisticas.respondidas;
+            const aciertos = estadisticas.aciertos;
+            const errores = respondidas - aciertos;
+            
+            let puntajeFinal = (aciertos * 20) - (errores * 1.125);
+            if (puntajeFinal < 0) puntajeFinal = 0;
+            puntajeFinal = Math.round(puntajeFinal);
+
+            const tasaFinal = respondidas > 0 ? Math.round((aciertos / respondidas) * 100) : 0;
+            
+            // Calcular tiempo promedio por pregunta
+            const totalSegundos = estadisticas.tiemposPorPregunta.reduce((acc, curr) => acc + curr.segundos, 0);
+            const promedioSegundos = respondidas > 0 ? Math.round(totalSegundos / respondidas) : 0;
 
             container.innerHTML = `
                 <div class="text-center py-8 space-y-6">
                     <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
-                        Simulacro Concluido • Evaluación del Director Académico
+                        Simulacro Concluido • Baremos y Tiempos UNMSM
                     </div>
                     <h2 class="text-2xl font-bold text-white">Informe de Rendimiento para Derecho</h2>
-                    <div class="grid grid-cols-2 gap-4 max-w-md mx-auto text-left bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-lg mx-auto text-left bg-slate-950 p-4 rounded-xl border border-slate-800">
                         <div>
-                            <span class="text-xs text-slate-400 block">Puntaje Estimado:</span>
+                            <span class="text-xs text-slate-400 block">Puntaje Real (Con Penalidad):</span>
                             <span class="text-lg font-bold text-red-500">${puntajeFinal} pts</span>
                         </div>
                         <div>
                             <span class="text-xs text-slate-400 block">Precisión Global:</span>
-                            <span class="text-lg font-bold text-emerald-400">${tasaFinal}%</span>
+                            <span class="text-lg font-bold text-emerald-400">${tasaFinal}% (${aciertos} correctas, ${errores} errores)</span>
+                        </div>
+                        <div class="md:col-span-2 pt-2 border-t border-slate-800">
+                            <span class="text-xs text-slate-400 block">Ritmo y Tiempo Invertido:</span>
+                            <span class="text-sm font-semibold text-amber-400">Promedio de ${promedioSegundos} segundos por pregunta.</span>
                         </div>
                     </div>
                     <p class="text-sm text-slate-300 max-w-md mx-auto">
-                        ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Superas la valla de los 1500 puntos para la carrera de Derecho.' : '⚠️ Estás por debajo de los 1500 puntos. Repasa los fundamentos técnicos de cada error para ajustar tu lectura.'}
+                        ${puntajeFinal >= 1500 ? '🎉 ¡Excelente desempeño! Superas la valla de los 1500 puntos exigidos para la carrera de Derecho.' : '⚠️ Estás por debajo de los 1500 puntos. Revisa tu velocidad en las lecturas largas y evita caer en los distractores penalizados.'}
                     </p>
                     <div>
                         <button onclick="iniciarSimulacro()" class="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl transition-all">
